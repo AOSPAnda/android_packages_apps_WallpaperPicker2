@@ -23,6 +23,7 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.view.doOnLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.android.wallpaper.R
 import com.android.wallpaper.module.logging.UserEventLogger
@@ -57,25 +58,27 @@ class CuratedPhotoHolder(
         curatedPhotoImage.contentDescription = item.contentDescription
 
         item.thumbnailAsset?.let { asset ->
-            asset.loadDrawableWithTransition(
-                /* context= */ context,
-                /* imageView= */ curatedPhotoImage,
-                /* transitionDurationMillis= */ context.resources.getInteger(
-                    android.R.integer.config_mediumAnimTime
-                ),
-                /* drawableLoadedListener= */ {
-                    val startTime = curatedPhotosTimeUtil.getStartTime()
-                    val timeMilliseconds = System.currentTimeMillis() - startTime
-                    userEventLogger.logCuratedPhotosRendered(timeMilliseconds, true)
-                    loadingAnimation?.playRevealAnimation {
-                        loadingAnimation = null
-                        backgroundColorBinding?.destroy()
-                        backgroundColorBinding = null
-                    }
-                },
-                /* placeholderColor= */ context.getColor(R.color.system_surface_bright),
-                /* permissionErrorListener= */ { onInvalidPhoto },
-            )
+            curatedPhotoImage.doOnLayout {
+                asset.loadDrawableWithTransition(
+                    /* context= */ context,
+                    /* imageView= */ curatedPhotoImage,
+                    /* transitionDurationMillis= */ context.resources.getInteger(
+                        android.R.integer.config_mediumAnimTime
+                    ),
+                    /* drawableLoadedListener= */ {
+                        val startTime = curatedPhotosTimeUtil.getStartTime()
+                        val timeMilliseconds = System.currentTimeMillis() - startTime
+                        userEventLogger.logCuratedPhotosRendered(timeMilliseconds, true)
+                        loadingAnimation?.playRevealAnimation {
+                            loadingAnimation = null
+                            backgroundColorBinding?.destroy()
+                            backgroundColorBinding = null
+                        }
+                    },
+                    /* placeholderColor= */ context.getColor(R.color.system_surface_bright),
+                    /* permissionErrorListener= */ { onInvalidPhoto },
+                )
+            }
         }
             ?: run {
                 // Glide will render the gif and on completion or failure will dismiss the
